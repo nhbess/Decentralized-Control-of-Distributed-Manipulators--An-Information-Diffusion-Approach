@@ -1,0 +1,1 @@
+# Decentralized Control of Distributed Manipulators: An Information Diffusion Approach
