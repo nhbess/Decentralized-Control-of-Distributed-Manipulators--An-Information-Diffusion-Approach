@@ -481,7 +481,7 @@ def figure_resolution():
 
 
 
-def figure_results_faulty():
+def figure_experiment_faulty():
     path = 'Data/Faulty'
     all_files = glob.glob(os.path.join(path, "*.bin"))
     nd = []
@@ -685,7 +685,7 @@ def process_faulty_experiment_data(file):
     return {'N': N, 'TILE_SIZE': TILE_SIZE, 'dead_tiles': dead_tiles, 'resolution': resolution,
             'symbol': symbol, 'data': d, 'error_angle': error_angle, 'error_position': error_position}
 
-def figure_results_faulty():
+def figure_experiment_faulty():
     path = 'Data/Faulty'
     all_files = glob.glob(os.path.join(path, "*.bin"))
     nd = [process_faulty_experiment_data(file) for file in all_files]
@@ -741,4 +741,4 @@ if __name__ == '__main__':
     #figure_resolution()
     
     #figure_experiment_resolution()
-    #figure_results_faulty()
+    figure_experiment_faulty()
