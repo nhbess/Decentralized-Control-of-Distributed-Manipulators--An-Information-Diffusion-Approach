@@ -415,7 +415,7 @@ def figure_rotation_vector():
     unitary_perpendicular = (
         unitary_perpendicular[0]*0.5, unitary_perpendicular[1]*0.5)
 
-    text = f'$\\vec{{v_r}} = \\vec{{p}} (\\beta - \\alpha) k$'
+    text = f'$\\vec{{v_r}} = \\vec{{p}}.err.k$'
 
     draw_arrow(example_tile[0], example_tile[1], example_tile[0] + unitary_perpendicular[0],
                example_tile[1] + unitary_perpendicular[1], 'black', text=text, delta_x=-0.35, delta_y=0.3)
@@ -737,8 +737,8 @@ if __name__ == '__main__':
     #figure_environment()
     #figure_trajectory()
     #figure_translation_vector()
-    #figure_rotation_vector()
+    figure_rotation_vector()
     #figure_resolution()
     
-    figure_experiment_resolution()
-    figure_results_faulty()
+    #figure_experiment_resolution()
+    #figure_results_faulty()

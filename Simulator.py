@@ -251,11 +251,9 @@ class Simulator:
               
     def handle_keyboard_input(self):
         for event in pygame.event.get():
-            #if space is pressed, the game is paused
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.pause = not self.pause
-                    # write pause on the screen
                     if self.pause:
                         pygame.display.set_caption("Pause")
                     else:
