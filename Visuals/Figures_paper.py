@@ -572,7 +572,7 @@ def figure_experiment_faulty():
         plt.tight_layout()
         plt.savefig(f'Images/Experiments/faulty_{typeerror}.png', dpi=300, bbox_inches='tight')
         plt.clf()
-        #plt.show()
+        plt.show()
 
     return
 
@@ -653,6 +653,10 @@ def get_errorbar_data(datas, x_axis: str, error_type: str):
 
     return xs, means, std_devs
 
+
+
+import sys
+
 def figure_experiment_resolution():
     path = 'Data/Resolution'
     all_files = glob.glob(os.path.join(path, "*.bin"))
@@ -662,10 +666,42 @@ def figure_experiment_resolution():
         this_data = process_experiment_data(file)
         datas.append(this_data)
 
-    plot_errorbar_data(datas=datas, x_axis='resolution',
-                       error_type='error_angle', ylabel='Angle Error $[°]$')
-    plot_errorbar_data(datas=datas, x_axis='resolution',
-                       error_type='error_position', ylabel='Position Error $[tiles]$')
+    angle_res, angle_means, angle_std_devs = get_errorbar_data(datas, x_axis='resolution', error_type='error_angle')
+    position_res, position_means, position_std_devs = get_errorbar_data(datas, x_axis='resolution', error_type='error_position')
+
+    side = 6
+    fig, ax1 = plt.subplots(figsize=(side, side/3))
+    colors = plt.cm.plasma(np.linspace(0, 1, 3))
+
+    ax1.plot(angle_res, angle_means, marker='o', c=colors[0])
+    fillup = [m - s for m, s in zip(angle_means, angle_std_devs)]
+    filldown = [m + s for m, s in zip(angle_means, angle_std_devs)]
+    plt.fill_between(angle_res, fillup, filldown, alpha=0.2, color=colors[0])
+    # Create a second y-axis sharing the same x-axis
+    
+    ax2 = ax1.twinx()
+    ax2.plot(position_res, position_means, marker='s', c=colors[1])
+    fillup = [m - s for m, s in zip(position_means, position_std_devs)]
+    filldown = [m + s for m, s in zip(position_means, position_std_devs)]
+    plt.fill_between(position_res, fillup, filldown, alpha=0.2, color=colors[1])
+
+
+    ax2.set_ylabel('Position error $[tiles]$')
+    ax1.set_ylabel('Angle error $[°]$')
+    ax1.set_xlabel('Resolution')
+
+
+    plt.plot([], [], 'o', label="Angle error", color=colors[0])
+    plt.plot([], [], 's', label="Position error", color=colors[1])
+ 
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.savefig(f'Images/Experiments/resolution.png', dpi=300, bbox_inches='tight')
+    #plt.show()
+    
+    #plot_errorbar_data(datas=datas, x_axis='resolution', error_type='error_angle', ylabel='Angle Error $[°]$')
+    #plot_errorbar_data(datas=datas, x_axis='resolution',error_type='error_position', ylabel='Position Error $[tiles]$')
 
 
 def process_faulty_experiment_data(file):
@@ -694,10 +730,12 @@ def figure_experiment_faulty():
     nd = [process_faulty_experiment_data(file) for file in all_files]
 
     resolutions = list(set([data['resolution'] for data in nd]))
+    resolutions = [3, 4, 5]
+    print(resolutions)
     new_datas = [[data for data in nd if data['resolution'] == resolution] for resolution in resolutions]
 
     for typeerror in ['error_angle', 'error_position']:
-        plt.figure(figsize=(6, 2))
+        plt.figure(figsize=(6, 1.5))
         n_colors = len(resolutions)
         colors = plt.cm.plasma(np.linspace(0, 1, n_colors))
         
@@ -722,16 +760,17 @@ def figure_experiment_faulty():
             filldown = [m + s for m, s in zip(means, std_devs)]
             plt.fill_between(percents, fillup, filldown, alpha=0.3, color=color)
 
-        plt.legend(loc='upper left')
+        #plt.legend(loc='upper left')
         ticks = np.arange(0, 1, 0.1)
         labels = [int(t * 100) for t in ticks]
-        plt.xticks(ticks, labels=labels)
+        #plt.xticks(ticks, labels=labels)
+        plt.xticks([])
         
-        plt.xlabel('Faulty Tiles [%]')
-        plt.ylabel('Angle Error [$°$]' if typeerror == 'error_angle' else 'Position Error [$tiles$]')
+        #plt.xlabel('Faulty Tiles [%]')
+        plt.ylabel('Angle error [$°$]' if typeerror == 'error_angle' else 'Position error [$tiles$]')
         plt.tight_layout()
         plt.savefig(f'Images/Experiments/faulty_{typeerror}.png', dpi=300, bbox_inches='tight')
-        plt.clf()
+
 
 
 
@@ -744,4 +783,4 @@ if __name__ == '__main__':
     #figure_resolution()
     
     #figure_experiment_resolution()
-    #figure_experiment_faulty()
+    figure_experiment_faulty()
