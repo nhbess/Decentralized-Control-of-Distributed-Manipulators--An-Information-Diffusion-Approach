@@ -110,14 +110,13 @@ def resolution_influence():
     }
 
     symbols = ["I", "O", "T", "J", "L", "S", "Z"]
-        # This is the setup used in the paper:
-    '''
+    # This is the setup used in the paper:
     runs_per_m = 20
     resolutions = [0.5, 0.75, 1, 2, 3, 4, 5]
-    '''
+    
     # This is a tiny experiment:    
-    runs_per_m = 5
-    resolutions = [3,4,5]
+    #runs_per_m = 5
+    #resolutions = [3,4,5]
 
     for resolution in resolutions:
         print(f'Resolution: {resolution}')
@@ -160,15 +159,15 @@ def fault_tolerance():
     symbols = ["I", "O", "T", "J", "L", "S", "Z"]  
     
     # This is the setup used in the paper:
-    '''
+    
     runs_per_percent = 20
     percentages = [i/10 for i in range(0, 10)]
-    resolutions = [3, 4, 5]
-    '''
+    resolutions = [2, 3, 4, 5]
+    
     # This is a tiny experiment:
-    runs_per_percent = 5
-    percentages = [0.2,0.5,0.8]
-    resolutions = [3,4,5]
+    #runs_per_percent = 10
+    #percentages = [i/10 for i in range(0, 10)]
+    #resolutions = [0.5, 0.75, 1, 2, 3, 4, 5]
 
     for res in resolutions:
         for percent in percentages:
@@ -188,6 +187,6 @@ def fault_tolerance():
 if __name__ == "__main__":
     #diffusion_mechanism()
     #trajectories()
-    resolution_influence()
+    #resolution_influence()
     fault_tolerance()
     pass

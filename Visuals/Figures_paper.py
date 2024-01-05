@@ -138,12 +138,12 @@ class Tetromino():
         return svg_document.tostring()
 
 
-def draw_grid(N, where=None):
+def draw_grid(N,M, where=None):
     # Plot grid
     if not where:
         where = plt.gca()
     for i in range(N):
-        for j in range(N):
+        for j in range(M):
             where.plot([i, i+1], [j, j], COLORS.GRID)
             where.plot([i, i], [j, j+1], COLORS.GRID)
             where.plot([i, i+1], [j+1, j+1], COLORS.GRID)
@@ -177,20 +177,22 @@ class COLORS:
 def figure_environment():
 
     N = 10
+    M = 8
+    
+    plt.figure(figsize=(3.5, 3.5))
+    draw_grid(N, M)
+    resolution = 1.5
 
-    draw_grid(N)
-    resolution = N//5
-
-    symbol = 'T'
+    symbol = 'S'
     tetrom = Tetromino(symbol, resolution, COLORS.TETROMINO)
     target = Tetromino(symbol, resolution, COLORS.TARGET)
-    tetrom.rotate(30)
-    tetrom.move_to(N*0.3, N*0.35)
-    tetrom.plot(text='$\\alpha$', dtx=0.1, dty=-0.05)
+    tetrom.rotate(-50)
+    tetrom.move_to(N*0.3, M*0.25)
+    tetrom.plot(text='$\\alpha$', dtx=0.5, dty=-0.3)
     target.rotate(160)
 
-    target.move_to(N*0.75, N*0.7)
-    target.plot(text='$\\beta$')
+    target.move_to(N*0.75, M*0.7)
+    target.plot(text='$\\beta$', dtx=-0.1, dty=-0.1)
     contact_tiles(tetrom.polygon, N, COLORS.CONTACT)
     contact_tiles(target.polygon, N, COLORS.TARGET_TILE)
 
@@ -200,6 +202,7 @@ def figure_environment():
     plt.plot([], [], 's', label="Target tiles", color=COLORS.TARGET_TILE)
     plt.plot([], [], 'x', label="Sensor", color=COLORS.GRID)
     plt.plot([], [], 'o', label="Center", color='black')
+
 
     plt.legend()
     plt.axis('off')
@@ -694,7 +697,7 @@ def figure_experiment_faulty():
     new_datas = [[data for data in nd if data['resolution'] == resolution] for resolution in resolutions]
 
     for typeerror in ['error_angle', 'error_position']:
-        plt.figure(figsize=(6, 3))
+        plt.figure(figsize=(6, 2))
         n_colors = len(resolutions)
         colors = plt.cm.plasma(np.linspace(0, 1, n_colors))
         
@@ -737,8 +740,8 @@ if __name__ == '__main__':
     #figure_environment()
     #figure_trajectory()
     #figure_translation_vector()
-    figure_rotation_vector()
+    #figure_rotation_vector()
     #figure_resolution()
     
     #figure_experiment_resolution()
-    figure_experiment_faulty()
+    #figure_experiment_faulty()
