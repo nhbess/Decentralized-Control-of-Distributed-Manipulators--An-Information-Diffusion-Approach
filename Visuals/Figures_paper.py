@@ -483,101 +483,6 @@ def figure_resolution():
 
 
 
-
-def figure_experiment_faulty():
-    path = 'Data/Faulty'
-    all_files = glob.glob(os.path.join(path, "*.bin"))
-    nd = []
-    for file in all_files:
-        with open(file, 'rb') as f:
-            experiment_data = np.load(f, allow_pickle=True).item()
-
-        N = experiment_data['N']
-        TILE_SIZE = experiment_data['TILE_SIZE']
-        symbol = experiment_data['symbol']
-        dead_tiles = experiment_data['dead_tiles']
-        d = experiment_data['data']
-        resolution = experiment_data['resolution']
-
-        final_angle = d['object_angle'].iloc[-1]
-        target_angle = d['target_angle'].iloc[-1]
-        error_angle = abs(final_angle - target_angle)
-        if error_angle > 180:
-            error_angle = 360 - error_angle
-        # print(final_angle, target_angle, error)
-
-        final_position = np.array(d['object_center'].iloc[-1])
-        target_position = np.array(d['target_center'].iloc[-1])
-        error_position = np.linalg.norm(
-            final_position - target_position)/TILE_SIZE
-
-        this_data = {'N': N, 'TILE_SIZE': TILE_SIZE, 'dead_tiles': dead_tiles, 'resolution': resolution,
-                     'symbol': symbol, 'data': d, 'error_angle': error_angle, 'error_position': error_position}
-        nd.append(this_data)
-
-    # get unique resolutions
-    resolutions = list(set([data['resolution'] for data in nd]))
-    new_datas = []
-    for resolution in resolutions:
-        new_datas.append(
-            [data for data in nd if data['resolution'] == resolution])
-
-    for typeerror in ['error_angle', 'error_position']:
-        #change size of plt
-        plt.figure(figsize=(6, 3))
-        n_colors = len(resolutions)
-        colors = plt.cm.plasma(np.linspace(0, 1, n_colors))
-        for res, nd, color in zip(resolutions, new_datas, colors):
-            
-            grouped_data = {}
-            for d in nd:
-                perc = d['dead_tiles']
-                error = d[typeerror]
-                if perc not in grouped_data:
-                    grouped_data[perc] = [error]
-                else:
-                    grouped_data[perc].append(error)
-            
-            percents = []
-            means = []
-            std_devs = []
-            
-            for perc, errors in grouped_data.items():
-                percents.append(perc)
-                means.append(np.mean(errors))
-                std_devs.append(np.std(errors))
-            
-            
-            plt.plot(percents, means, marker='o', label='$Resolution = {}$'.format(res), c = color)
-            fillup = [m-s for m, s in zip(means, std_devs)]
-            filldown = [m+s for m, s in zip(means, std_devs)]
-            plt.fill_between(percents, fillup, filldown, alpha=0.3, color = color)
-
-
-        plt.legend()
-        #position of the legend
-        plt.legend(loc='upper left')
-        ticks = np.arange(0, 1, 0.1)
-        labels = [int(t*100) for t in ticks]
-        plt.xticks(ticks, labels=labels)
-        
-        plt.xlabel('Faulty Tiles [%]')        
-        if typeerror == 'error_angle':
-            plt.ylabel('Angle Error $[°]$')
-        else:
-            plt.ylabel('Position Error $[tiles]$')
-        # y log scale
-        #plt.yscale('log')
-        #save figure
-        plt.tight_layout()
-        plt.savefig(f'Images/Experiments/faulty_{typeerror}.png', dpi=300, bbox_inches='tight')
-        plt.clf()
-        plt.show()
-
-    return
-
-
-
 import os
 import glob
 import numpy as np
@@ -734,44 +639,84 @@ def figure_experiment_faulty():
     print(resolutions)
     new_datas = [[data for data in nd if data['resolution'] == resolution] for resolution in resolutions]
 
-    for typeerror in ['error_angle', 'error_position']:
-        plt.figure(figsize=(6, 1.5))
-        n_colors = len(resolutions)
-        colors = plt.cm.plasma(np.linspace(0, 1, n_colors))
-        
-        for res, nd, color in zip(resolutions, new_datas, colors):
-            grouped_data = {}
-            for d in nd:
-                perc = d['dead_tiles']
-                error = d[typeerror]
-                grouped_data.setdefault(perc, []).append(error)
-            
-            percents = []
-            means = []
-            std_devs = []
-            
-            for perc, errors in grouped_data.items():
-                percents.append(perc)
-                means.append(np.mean(errors))
-                std_devs.append(np.std(errors))
-            
-            plt.plot(percents, means, marker='o', label=f'Resolution = {res}', c=color)
-            fillup = [m - s for m, s in zip(means, std_devs)]
-            filldown = [m + s for m, s in zip(means, std_devs)]
-            plt.fill_between(percents, fillup, filldown, alpha=0.3, color=color)
 
-        #plt.legend(loc='upper left')
-        ticks = np.arange(0, 1, 0.1)
-        labels = [int(t * 100) for t in ticks]
-        #plt.xticks(ticks, labels=labels)
-        plt.xticks([])
-        
-        #plt.xlabel('Faulty Tiles [%]')
-        plt.ylabel('Angle error [$°$]' if typeerror == 'error_angle' else 'Position error [$tiles$]')
-        plt.tight_layout()
-        plt.savefig(f'Images/Experiments/faulty_{typeerror}.png', dpi=300, bbox_inches='tight')
+    all_data = {}
+    for res, data in zip(resolutions,new_datas):
+        data_resolution = {}
+
+        for run in data:
+            dead_tiles = run['dead_tiles']
+            error_angle = run['error_angle']
+            error_position = run['error_position']
+
+            if dead_tiles not in data_resolution:
+                data_resolution[dead_tiles] = {'error_angle': [], 'error_position': []}
+            else:
+                data_resolution[dead_tiles]['error_angle'].append(error_angle)
+                data_resolution[dead_tiles]['error_position'].append(error_position)
 
 
+
+        dead_tiles = list(data_resolution.keys())
+        angle_e = [np.mean(data_resolution[dead_tiles]['error_angle']) for dead_tiles in data_resolution.keys()]
+        position_e = [np.mean(data_resolution[dead_tiles]['error_position']) for dead_tiles in data_resolution.keys()]
+        angle_std = [np.std(data_resolution[dead_tiles]['error_angle']) for dead_tiles in data_resolution.keys()]
+        position_std = [np.std(data_resolution[dead_tiles]['error_position']) for dead_tiles in data_resolution.keys()]
+
+        all_data[res] = {'dead_tiles': dead_tiles, 
+                         'error_angle': angle_e, 
+                         'error_position': position_e, 
+                         'angle_std': angle_std, 
+                         'position_std': position_std}
+    
+
+
+
+    gridspec_kw = dict(
+    height_ratios=(1, 1),
+    hspace=0,
+    )
+
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, gridspec_kw=gridspec_kw)
+    colors = plt.cm.plasma(np.linspace(0, 1, len(resolutions)))
+    #set size of figure
+    fig.set_size_inches(6, 3)
+
+    for i, res in enumerate(resolutions):
+        error_angle = all_data[res]['error_angle']
+        error_position = all_data[res]['error_position']
+        dead_tiles = all_data[res]['dead_tiles']
+        angle_std = all_data[res]['angle_std']
+        position_std = all_data[res]['position_std']
+
+        axes[0].plot(dead_tiles, error_angle, marker='o', label=f'Resolution = {res}', c=colors[i])
+        fillup = [m - s for m, s in zip(error_angle, angle_std)]
+        filldown = [m + s for m, s in zip(error_angle, angle_std)]
+        axes[0].fill_between(dead_tiles, fillup, filldown, alpha=0.3, color=colors[i])
+
+        axes[1].plot(dead_tiles, error_position, marker='o', label=f'Resolution = {res}', c=colors[i])
+        fillup = [m - s for m, s in zip(error_position, position_std)]
+        filldown = [m + s for m, s in zip(error_position, position_std)]
+        axes[1].fill_between(dead_tiles, fillup, filldown, alpha=0.3, color=colors[i])
+
+
+    axes[0].set_ylabel('Angle error [$°$]')
+    axes[1].set_ylabel('Position error [$tiles$]')
+    axes[1].set_xlabel('Faulty Tiles [%]')
+    #axes[0].legend(loc='upper left')
+    axes[1].legend(loc='upper left')
+    axes[0].set_xticks(dead_tiles)
+    axes[1].set_xticks(dead_tiles)
+    axes[0].set_xticklabels([int(t * 100) for t in dead_tiles])
+    axes[1].set_xticklabels([int(t * 100) for t in dead_tiles])
+
+    plt.tight_layout()
+    plt.savefig(f'Images/Experiments/faulty.png', dpi=300, bbox_inches='tight')
+
+    plt.show()
+    sys.exit()
+            
+    
 
 
 
