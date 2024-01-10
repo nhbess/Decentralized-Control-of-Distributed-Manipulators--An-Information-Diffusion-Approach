@@ -14,83 +14,82 @@ from shapely.geometry import Point, Polygon
 import ast
 import matplotlib.cm as cm
 import math
+import shapely.affinity
+from shapely.geometry import Polygon
+import shapely.plotting
 
+tetros_dict = {
+'L' : np.array([(0, 0), (0, 3), (1, 3), (1, 1), (2, 1), (2, 0)]),
+'O' : np.array([(0, 0), (0, 2), (2, 2), (2, 0)]),
+'T' : np.array([(0, 0), (0, 1), (1, 1), (1, 2), (2, 2), (2, 1), (3, 1), (3, 0)]),
+'I' : np.array([(0, 0), (0, 1), (4, 1), (4, 0)]),
+'S' : np.array([(0, 0), (0, 1), (1, 1), (1, 2), (3, 2), (3, 1), (2, 1), (2, 0)]),
+'Z' : np.array([(0, 2), (2, 2), (2, 1), (3, 1), (3, 0), (1, 0), (1, 1), (0, 1)]),
+'J' : np.array([(0, 0), (0, 1), (1, 1), (1, 3), (2, 3), (2, 0)]),
+}
 
-class Tetromino():
-    def __init__(self, symbol: str, resolution: float, color: str) -> None:
+class Tetromino:
+    def __init__(self, constructor_vertices:list[tuple], scaler:float = 1, color = 'b') -> None:
+        self.__constructor_vertices = constructor_vertices
+        self.id = id
+        self.scaler = scaler
+        self.polygon = Polygon(constructor_vertices*scaler)
         self.color = color
-        self.symbol = symbol
-        self.resolution = resolution
-        self.polygon = Polygon(self._create_polygob())
-        self.angle = 0
-        pass
+        self.__angle = 0.0
+
+    @property
+    def center(self) -> tuple:
+        center = self.polygon.centroid.coords.xy
+        return np.array([center[0][0], center[1][0]])
+    
+    @property
+    def vertices(self) -> np.array:
+        vertices = self.polygon.exterior.coords.xy
+        return np.array([vertices[0], vertices[1]]).T
+    @property
+    def constructor_vertices(self) -> np.array:
+        return self.__constructor_vertices.tolist()
+    @center.setter
+    def center(self, new_center: tuple) -> None:
+        self.polygon = shapely.affinity.translate(self.polygon, xoff=new_center[0] - self.center[0], yoff=new_center[1] - self.center[1], zoff=0.0)
 
     def rotate(self, angle: float) -> None:
-        to_rot = angle - self.angle
-        self.polygon = affinity.rotate(
-            self.polygon, to_rot, origin=self.polygon.centroid)
-        self.angle = angle
-        pass
+        self.polygon = shapely.affinity.rotate(self.polygon, angle, origin='centroid', use_radians=False)
+        self.__angle = (self.__angle + angle)%360
 
-    def move_to(self, x: float, y: float) -> None:
-        x = x - self.polygon.centroid.x
-        y = y - self.polygon.centroid.y
-        self.polygon = affinity.translate(self.polygon, xoff=x, yoff=y)
-        pass
+    def translate(self, direction) -> None:
+        self.polygon = shapely.affinity.translate(self.polygon, xoff=direction[0], yoff=direction[1], zoff=0.0)
+        
 
-    def _create_polygob(self) -> Polygon:
-        image_path = f"Images\Tetrominos\{self.symbol}.png"
-        image = cv2.imread(image_path)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        _, threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
-        edged = cv2.Canny(gray, 30, 200)
-        contours, hierarchy = cv2.findContours(
-            edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        contours, _ = cv2.findContours(
-            threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        contours = [np.squeeze(contour) for contour in contours]
-        max_ = max(max([max(contour[:, 0]) for contour in contours]), max(
-            [max(contour[:, 1]) for contour in contours]))
-        contours = [contour/max_ for contour in contours]
-
-        scales = {
-            'I': 4,
-            'J': 3,
-            'L': 3,
-            'O': 2,
-            'S': 3,
-            'T': 3,
-            'Z': 3,
-        }
-
-        long_side = scales[self.symbol]*self.resolution
-        contours = [contour*long_side for contour in contours]
-        polygon = Polygon(contours[0]).simplify(0.25, preserve_topology=True)
-        return polygon
-
-    def plot(self, where=None, text=None, dtx=0, dty=0, hide_angle=False) -> None:
+    def plot(self, plot=None, text=None, dtx=0, dty=0, hide_angle=False) -> None:
         # contour
         points = self.polygon.exterior.coords
-        x, y = zip(*points)
+        x_values, y_values = zip(*points)
 
-        if not where:
-            where = plt
-        where.fill(x, y, self.color, alpha=0.9, zorder=3)
+        shapely.plotting.plot_polygon(self.polygon,
+                                      add_points=False, 
+                                      facecolor=self.color, 
+                                      #edgecolor='black', 
+                                      alpha=0.9, 
+                                      zorder=3, 
+                                      linewidth=0
+                                      
+                                      )
 
+    
         # center
         center = self.polygon.centroid
-        where.plot(center.x, center.y, 'o', color='black', zorder=3)
-        radius = self.resolution/2
+        plot.plot(center.x, center.y, 'o', color='black', zorder=3)
+        radius = 0.5
 
         if not hide_angle:
             # plot angle
-
             xangle = np.cos(np.deg2rad(self.angle))*radius*2
             yangle = np.sin(np.deg2rad(self.angle))*radius*2
             # print(xangle, yangle)
-            where.plot([center.x, center.x + xangle], [center.y,
+            plot.plot([center.x, center.x + xangle], [center.y,
                        center.y+yangle], color='black', zorder=3)
-            where.plot([center.x, center.x+radius*2],
+            plot.plot([center.x, center.x+radius*2],
                        [center.y, center.y], color='black', zorder=3)
 
             # plot arch
@@ -107,36 +106,25 @@ class Tetromino():
                 # plot text between center and angle
                 xtext = np.cos(np.deg2rad(self.angle/2))*radius/2
                 ytext = np.sin(np.deg2rad(self.angle/2))*radius/2
-                where.text(center.x + xtext + dtx, center.y + ytext + dty,
-                           text, color='black', zorder=3, fontsize=COLORS.FONT_SIZE)
+                plot.text(center.x + xtext + dtx, center.y + ytext + dty,
+                           text, color='black', zorder=4, fontsize=COLORS.FONT_SIZE)
 
-            # plt.gca().add_patch(arc)
-            # where.gca().add_patch(arc)
-            if where == plt:
-                where.gca().add_patch(arc)
-            else:
-                where.add_patch(arc)
 
-    def plot_symbol_resolution(self, text, dx=0, dy=0):
-        # plot a text over the center of the polygon
-        center = self.polygon.centroid
-        plt.text(center.x + dx, center.y + dy, text, color='black',
-                 zorder=3, fontsize=COLORS.FONT_SIZE)
+            plot.gca().add_patch(arc)
 
-    def plot_contour(self, where=None, color: str = 'black') -> None:
-        if not where:
-            where = plt.gca()
-        points = self.polygon.exterior.coords
-        x, y = zip(*points)
-        where.plot(x, y, color, zorder=3, linewidth=2, alpha=0.2)
 
-    def get_svg_path(self):
-        points = self.polygon.exterior.coords
-        svg_document = svgwrite.Drawing(filename='polygon.svg')
-        svg_document.add(svg_document.polygon(points=points, fill=self.color))
-        svg_document.save()
-        return svg_document.tostring()
-
+    def set_angle(self, new_angle):
+        angle = new_angle - self.__angle
+        self.polygon = shapely.affinity.rotate(self.polygon, angle, origin='centroid', use_radians=False)
+        self.__angle = new_angle
+    
+    @property
+    def angle(self) -> float:
+        return self.__angle
+    
+    def print_info(self) -> None:
+        print('center: {}'.format(self.center))
+        print('angle: {}'.format(self.__angle))
 
 def draw_grid(N,M, where=None):
     # Plot grid
@@ -152,54 +140,62 @@ def draw_grid(N,M, where=None):
             where.plot(i+0.5, j+0.5, 'x', color=COLORS.GRID)
 
 
-def contact_tiles(obj: Polygon, N: int, color: str = 'black'):
+def contact_tiles(obj: Polygon, N: int, color):
     for i in range(N):
         for j in range(N):
             # if the object touchs the center of the tile
             if obj.contains(Point(i+0.5, j+0.5)):
-                # draw the contour of the tile
-                plt.plot([i, i+1], [j, j], color, zorder=2, linewidth=2)
-                plt.plot([i, i], [j, j+1], color, zorder=2, linewidth=2)
-                plt.plot([i, i+1], [j+1, j+1], color, zorder=2, linewidth=2)
-                plt.plot([i+1, i+1], [j, j+1], color, zorder=2, linewidth=2)
+                tile = Polygon([(i, j), (i+1, j), (i+1, j+1), (i, j+1)])
+                shapely.plotting.plot_polygon(tile, 
+                 add_points=False, 
+                 facecolor='none',  # Set facecolor to 'none'
+                 edgecolor=color,  # Specify the desired edgecolor
+                 alpha=1,
+                 zorder=2, 
+                 linewidth=2)
+
     pass
 
 
 class COLORS:
-    OBJECT =        '#add8e6' 
-    TARGET =        '#ffa500'
-    CONTACT_TILE =  '#0000ff'
-    TARGET_TILE =   '#ff0000'
+    import colors
+    palette = colors.create_palette(4,normalize=True)
+    colors.show_palette(palette, save=True, name='Images/Paper/Palette.png')
+
+    OBJECT =        palette[1]
+    TARGET =        palette[2]
+    CONTACT_TILE =  palette[0]
+    TARGET_TILE =   palette[3]
     GRID =          '#d3d3d3'
     FONT_SIZE = 12
 
 def figure_environment():
-
-    colors = plt.cm.plasma(np.linspace(0, 1, 4))
-    print(colors)
-    #colors to hex
-    hex_colors = []
-    for color in colors:
-        hex_colors.append('#%02x%02x%02x' % (int(color[0]*255), int(color[1]*255), int(color[2]*255)))
-    print(hex_colors)
-
     N = 10
     M = 8
-    
     plt.figure(figsize=(3.5, 3.5))
-    draw_grid(N, M)
+    for i in range(N):
+        for j in range(M):
+            plt.plot([i, i+1], [j, j], COLORS.GRID)
+            plt.plot([i, i], [j, j+1], COLORS.GRID)
+            plt.plot([i, i+1], [j+1, j+1], COLORS.GRID)
+            plt.plot([i+1, i+1], [j, j+1], COLORS.GRID)
+            plt.plot(i+0.5, j+0.5, 'x', color=COLORS.GRID)
+
     resolution = 1.5
 
-    symbol = 'S'
-    tetrom = Tetromino(symbol, resolution, COLORS.OBJECT)
-    target = Tetromino(symbol, resolution, COLORS.TARGET)
-    tetrom.rotate(-50)
-    tetrom.move_to(N*0.3, M*0.25)
-    tetrom.plot(text='$\\alpha$', dtx=0.5, dty=-0.3)
-    target.rotate(160)
-
-    target.move_to(N*0.75, M*0.7)
-    target.plot(text='$\\beta$', dtx=-0.1, dty=-0.1)
+    symbol = 'Z'
+    vertex = tetros_dict[symbol]
+    tetrom = Tetromino(vertex, resolution, COLORS.OBJECT)
+    tetrom.rotate(45)
+    tetrom.translate([0.7, 0.4])
+    tetrom.plot(plot=plt, text='$\\alpha$', dtx=0.3, dty=0.15)
+    
+    
+    target = Tetromino(vertex, resolution, COLORS.TARGET)
+    target.rotate(75)
+    target.translate([N*0.55, M*0.49])
+    target.plot(plot=plt, text='$\\beta$', dtx=0.25, dty=0.25)
+    
     contact_tiles(tetrom.polygon, N, COLORS.CONTACT_TILE)
     contact_tiles(target.polygon, N, COLORS.TARGET_TILE)
 
@@ -211,14 +207,12 @@ def figure_environment():
     plt.plot([], [], 'o', label="Center", color='black')
 
 
-    plt.legend()
-    plt.legend(framealpha=1)
+    plt.legend(framealpha=1, loc='upper left')
     plt.axis('off')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.tight_layout()
-    #remove empty padding around the image
     plt.savefig('Images/Paper/Environment.png', dpi=300, bbox_inches='tight')
-    
+
     # plt.show()
 
 
@@ -275,7 +269,7 @@ def figure_trajectory():
         tetrom.rotate(object_angle[0])
         tetrom.move_to(object_center[0][0]/TILE_SIZE,
                        object_center[0][1]/TILE_SIZE)
-        tetrom.plot(where=image)
+        tetrom.plot(plot=image)
 
         # Plot trajectory
         X = [point[0]/TILE_SIZE for point in object_center]
@@ -299,12 +293,12 @@ def figure_trajectory():
         # Plot target
         target.rotate(target_angle)
         target.move_to(target_center[0], target_center[1])
-        target.plot(where=image)
+        target.plot(plot=image)
 
         # Plot Final position
         tetrom.rotate(object_angle[-1])
         tetrom.move_to(X[-1], Y[-1])
-        tetrom.plot(where=image)
+        tetrom.plot(plot=image)
 
         # cealing and floor of min and max on number divisible by TILE_SIZE
         max_x = np.ceil(max_x)
@@ -586,19 +580,21 @@ def figure_experiment_resolution():
 
     side = 6
     fig, ax1 = plt.subplots(figsize=(side, side/3))
-    colors = plt.cm.plasma(np.linspace(0, 1, 3))
+    import colors
+    palette = colors.create_palette(2,normalize=True)
+
     #colors = [COLORS.CONTACT_TILE, COLORS.TARGET_TILE]
-    ax1.plot(angle_res, angle_means, marker='o', c=colors[0])
+    ax1.plot(angle_res, angle_means, marker='o', c=palette[0])
     fillup = [m - s for m, s in zip(angle_means, angle_std_devs)]
     filldown = [m + s for m, s in zip(angle_means, angle_std_devs)]
-    plt.fill_between(angle_res, fillup, filldown, alpha=0.2, color=colors[0])
+    plt.fill_between(angle_res, fillup, filldown, alpha=0.2, color=palette[0])
     # Create a second y-axis sharing the same x-axis
     
     ax2 = ax1.twinx()
-    ax2.plot(position_res, position_means, marker='s', c=colors[1])
+    ax2.plot(position_res, position_means, marker='s', c=palette[1])
     fillup = [m - s for m, s in zip(position_means, position_std_devs)]
     filldown = [m + s for m, s in zip(position_means, position_std_devs)]
-    plt.fill_between(position_res, fillup, filldown, alpha=0.2, color=colors[1])
+    plt.fill_between(position_res, fillup, filldown, alpha=0.2, color=palette[1])
 
 
     ax2.set_ylabel('Position error $[tiles]$')
@@ -606,8 +602,8 @@ def figure_experiment_resolution():
     ax1.set_xlabel('Resolution')
 
 
-    plt.plot([], [], 'o', label="Angle error", color=colors[0])
-    plt.plot([], [], 's', label="Position error", color=colors[1])
+    plt.plot([], [], 'o', label="Angle error", color=palette[0])
+    plt.plot([], [], 's', label="Position error", color=palette[1])
  
     plt.legend()
     
@@ -689,6 +685,10 @@ def figure_experiment_faulty():
 
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, gridspec_kw=gridspec_kw)
     colors = plt.cm.plasma(np.linspace(0, 1, len(resolutions)))
+    import colors
+    palette = colors.create_palette(len(resolutions)+1,normalize=True)
+    #remove second color
+    palette.pop(1)
     #colors = [COLORS.CONTACT_TILE, COLORS.OBJECT, COLORS.GRID]
     #set size of figure
     fig.set_size_inches(6, 3)
@@ -700,15 +700,15 @@ def figure_experiment_faulty():
         angle_std = all_data[res]['angle_std']
         position_std = all_data[res]['position_std']
 
-        axes[0].plot(dead_tiles, error_angle, marker='o', label=f'Resolution = {res}', c=colors[i])
+        axes[0].plot(dead_tiles, error_angle, marker='o', label=f'Resolution = {res}', c=palette[i])
         fillup = [m - s for m, s in zip(error_angle, angle_std)]
         filldown = [m + s for m, s in zip(error_angle, angle_std)]
-        axes[0].fill_between(dead_tiles, fillup, filldown, alpha=0.3, color=colors[i])
+        axes[0].fill_between(dead_tiles, fillup, filldown, alpha=0.2, color=palette[i])
 
-        axes[1].plot(dead_tiles, error_position, marker='o', label=f'Resolution = {res}', c=colors[i])
+        axes[1].plot(dead_tiles, error_position, marker='o', label=f'Resolution = {res}', c=palette[i])
         fillup = [m - s for m, s in zip(error_position, position_std)]
         filldown = [m + s for m, s in zip(error_position, position_std)]
-        axes[1].fill_between(dead_tiles, fillup, filldown, alpha=0.3, color=colors[i])
+        axes[1].fill_between(dead_tiles, fillup, filldown, alpha=0.2, color=palette[i])
 
 
     axes[0].set_ylabel('Angle error\n[$°$]')
@@ -724,7 +724,7 @@ def figure_experiment_faulty():
     plt.tight_layout()
     plt.savefig(f'Images/Experiments/faulty.png', dpi=300, bbox_inches='tight')
 
-    plt.show()
+    #plt.show()
     sys.exit()
             
     
@@ -738,5 +738,5 @@ if __name__ == '__main__':
     #figure_rotation_vector()
     #figure_resolution()
     
-    #figure_experiment_resolution()
-    #figure_experiment_faulty()
+    figure_experiment_resolution()
+    figure_experiment_faulty()
