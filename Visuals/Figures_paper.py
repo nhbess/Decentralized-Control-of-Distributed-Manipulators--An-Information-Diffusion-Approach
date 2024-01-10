@@ -166,13 +166,12 @@ def contact_tiles(obj: Polygon, N: int, color: str = 'black'):
 
 
 class COLORS:
-    TETROMINO = 'lightblue'
-    TARGET = 'orange'
-    CONTACT = 'blue'
-    TARGET_TILE = 'red'
-    GRID = 'lightgray'
+    OBJECT =        '#add8e6' 
+    TARGET =        '#ffa500'
+    CONTACT_TILE =  '#0000ff'
+    TARGET_TILE =   '#ff0000'
+    GRID =          '#d3d3d3'
     FONT_SIZE = 12
-
 
 def figure_environment():
 
@@ -184,7 +183,7 @@ def figure_environment():
     resolution = 1.5
 
     symbol = 'S'
-    tetrom = Tetromino(symbol, resolution, COLORS.TETROMINO)
+    tetrom = Tetromino(symbol, resolution, COLORS.OBJECT)
     target = Tetromino(symbol, resolution, COLORS.TARGET)
     tetrom.rotate(-50)
     tetrom.move_to(N*0.3, M*0.25)
@@ -193,22 +192,25 @@ def figure_environment():
 
     target.move_to(N*0.75, M*0.7)
     target.plot(text='$\\beta$', dtx=-0.1, dty=-0.1)
-    contact_tiles(tetrom.polygon, N, COLORS.CONTACT)
+    contact_tiles(tetrom.polygon, N, COLORS.CONTACT_TILE)
     contact_tiles(target.polygon, N, COLORS.TARGET_TILE)
 
-    plt.plot([], [], 's', label="Object", color=COLORS.TETROMINO)
-    plt.plot([], [], 's', label="Target", color=COLORS.TARGET)
-    plt.plot([], [], 's', label="Contact tiles", color=COLORS.CONTACT)
+    plt.plot([], [], 's', label="Object", color=COLORS.OBJECT)
+    plt.plot([], [], 's', label="Target position", color=COLORS.TARGET)
+    plt.plot([], [], 's', label="Contact tiles", color=COLORS.CONTACT_TILE)
     plt.plot([], [], 's', label="Target tiles", color=COLORS.TARGET_TILE)
     plt.plot([], [], 'x', label="Sensor", color=COLORS.GRID)
     plt.plot([], [], 'o', label="Center", color='black')
 
 
     plt.legend()
+    plt.legend(framealpha=1)
     plt.axis('off')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.tight_layout()
+    #remove empty padding around the image
     plt.savefig('Images/Paper/Environment.png', dpi=300, bbox_inches='tight')
+    
     # plt.show()
 
 
@@ -259,7 +261,7 @@ def figure_trajectory():
                          TILE_SIZE, target_center[0][1]/TILE_SIZE)
         target_angle = float(data['target_angle'].to_numpy()[0])
 
-        tetrom = Tetromino(symbol, resolution, COLORS.TETROMINO)
+        tetrom = Tetromino(symbol, resolution, COLORS.OBJECT)
         target = Tetromino(symbol, resolution, COLORS.TARGET)
 
         tetrom.rotate(object_angle[0])
@@ -400,11 +402,11 @@ def figure_rotation_vector():
     resolution = 1
     t_center = (1.6, 1.6)
     symbol = 'T'
-    tetrom = Tetromino(symbol, resolution, COLORS.TETROMINO)
+    tetrom = Tetromino(symbol, resolution, COLORS.OBJECT)
     tetrom.rotate(35)
     tetrom.move_to(t_center[0], t_center[1])
     tetrom.plot(text='$\\alpha$')
-    contact_tiles(tetrom.polygon, N, COLORS.CONTACT)
+    contact_tiles(tetrom.polygon, N, COLORS.CONTACT_TILE)
 
     example_tile = (2.5, 0.5)
     r = (t_center[0] - example_tile[0], t_center[1] - example_tile[1])
@@ -435,11 +437,11 @@ def figure_rotation_vector():
 def figure_resolution():
 
     N = 6
-    t = Tetromino('T', 2, COLORS.TETROMINO)
-    l = Tetromino('J', 1, COLORS.TETROMINO)
-    s = Tetromino('Z', 0.75, COLORS.TETROMINO)
-    i = Tetromino('I', 0.25, COLORS.TETROMINO)
-    o = Tetromino('O', 0.5, COLORS.TETROMINO)
+    t = Tetromino('T', 2, COLORS.OBJECT)
+    l = Tetromino('J', 1, COLORS.OBJECT)
+    s = Tetromino('Z', 0.75, COLORS.OBJECT)
+    i = Tetromino('I', 0.25, COLORS.OBJECT)
+    o = Tetromino('O', 0.5, COLORS.OBJECT)
 
     xl = l.polygon.centroid.x
     yl = l.polygon.centroid.y
@@ -462,11 +464,11 @@ def figure_resolution():
     o.plot(hide_angle=True)
 
     draw_grid(N)
-    contact_tiles(t.polygon, N, COLORS.CONTACT)
-    contact_tiles(l.polygon, N, COLORS.CONTACT)
-    contact_tiles(s.polygon, N, COLORS.CONTACT)
-    contact_tiles(i.polygon, N, COLORS.CONTACT)
-    contact_tiles(o.polygon, N, COLORS.CONTACT)
+    contact_tiles(t.polygon, N, COLORS.CONTACT_TILE)
+    contact_tiles(l.polygon, N, COLORS.CONTACT_TILE)
+    contact_tiles(s.polygon, N, COLORS.CONTACT_TILE)
+    contact_tiles(i.polygon, N, COLORS.CONTACT_TILE)
+    contact_tiles(o.polygon, N, COLORS.CONTACT_TILE)
 
     s.plot_symbol_resolution('$Shape = S$' + '\n' + '$Res = 0.75$', -0.6, 0.2)
     t.plot_symbol_resolution('$Shape = T$' + '\n' + '$Res = 2$', -0.6, 0.2)
@@ -672,7 +674,7 @@ def figure_experiment_resolution():
     side = 6
     fig, ax1 = plt.subplots(figsize=(side, side/3))
     colors = plt.cm.plasma(np.linspace(0, 1, 3))
-
+    colors = [COLORS.CONTACT_TILE, COLORS.TARGET_TILE]
     ax1.plot(angle_res, angle_means, marker='o', c=colors[0])
     fillup = [m - s for m, s in zip(angle_means, angle_std_devs)]
     filldown = [m + s for m, s in zip(angle_means, angle_std_devs)]
@@ -782,5 +784,5 @@ if __name__ == '__main__':
     #figure_rotation_vector()
     #figure_resolution()
     
-    #figure_experiment_resolution()
-    figure_experiment_faulty()
+    figure_experiment_resolution()
+    #figure_experiment_faulty()
