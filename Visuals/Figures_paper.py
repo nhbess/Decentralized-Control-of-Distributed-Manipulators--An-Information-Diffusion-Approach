@@ -175,6 +175,14 @@ class COLORS:
 
 def figure_environment():
 
+    colors = plt.cm.plasma(np.linspace(0, 1, 4))
+    print(colors)
+    #colors to hex
+    hex_colors = []
+    for color in colors:
+        hex_colors.append('#%02x%02x%02x' % (int(color[0]*255), int(color[1]*255), int(color[2]*255)))
+    print(hex_colors)
+
     N = 10
     M = 8
     
@@ -579,7 +587,7 @@ def figure_experiment_resolution():
     side = 6
     fig, ax1 = plt.subplots(figsize=(side, side/3))
     colors = plt.cm.plasma(np.linspace(0, 1, 3))
-    colors = [COLORS.CONTACT_TILE, COLORS.TARGET_TILE]
+    #colors = [COLORS.CONTACT_TILE, COLORS.TARGET_TILE]
     ax1.plot(angle_res, angle_means, marker='o', c=colors[0])
     fillup = [m - s for m, s in zip(angle_means, angle_std_devs)]
     filldown = [m + s for m, s in zip(angle_means, angle_std_devs)]
@@ -681,6 +689,7 @@ def figure_experiment_faulty():
 
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, gridspec_kw=gridspec_kw)
     colors = plt.cm.plasma(np.linspace(0, 1, len(resolutions)))
+    #colors = [COLORS.CONTACT_TILE, COLORS.OBJECT, COLORS.GRID]
     #set size of figure
     fig.set_size_inches(6, 3)
 
@@ -702,8 +711,8 @@ def figure_experiment_faulty():
         axes[1].fill_between(dead_tiles, fillup, filldown, alpha=0.3, color=colors[i])
 
 
-    axes[0].set_ylabel('Angle error [$°$]')
-    axes[1].set_ylabel('Position error [$tiles$]')
+    axes[0].set_ylabel('Angle error\n[$°$]')
+    axes[1].set_ylabel('Position error\n[$tiles$]')
     axes[1].set_xlabel('Faulty Tiles [%]')
     #axes[0].legend(loc='upper left')
     axes[1].legend(loc='upper left')
@@ -723,11 +732,11 @@ def figure_experiment_faulty():
 
 
 if __name__ == '__main__':
-    #figure_environment()
+    figure_environment()
     #figure_trajectory()
     #figure_translation_vector()
     #figure_rotation_vector()
     #figure_resolution()
     
-    figure_experiment_resolution()
+    #figure_experiment_resolution()
     #figure_experiment_faulty()
